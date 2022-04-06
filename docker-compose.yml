@@ -1,0 +1,59 @@
+version: "3.4"
+services:
+  bot_ti:
+    hostname: bot_ti
+    container_name: bot_ti
+    depends_on:
+      - postgres
+    build:
+     context: app/
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "2048k"
+        max-file: "4"
+    networks:
+     ftnet:
+      ipv4_address: 172.22.0.3
+
+  postgres:
+    hostname: postgres
+    container_name: postgres
+    image: postgres:13.3
+    #env_file:
+    #- vars.env
+    environment:
+      POSTGRES_DB: "ti"
+      POSTGRES_USER: "ti_user"
+      POSTGRES_PASSWORD: "pgpwd4habr"
+      PGDATA: "/var/lib/postgresql/data/pgdata"
+    volumes:
+      - ./postgres/entrypoint:/docker-entrypoint-initdb.d
+   #   - ./postgres/data:/var/lib/postgresql/data
+    ports:
+      - "6000:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ti_user -d ti"]
+      interval: 1m30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "2048k"
+        max-file: "4"
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 4G
+    networks:
+      ftnet:
+       ipv4_address: 172.22.0.2
+networks:
+ ftnet:
+  ipam:
+   config:
+   - subnet: 172.22.0.0/24
